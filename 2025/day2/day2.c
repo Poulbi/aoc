@@ -10,11 +10,6 @@
 
 #define NUMBER_OF_CORES 6
 
-#if 0 // Disable asserts
-#undef Assert
-#define Assert(Expression)
-#endif
-
 //~ Layers
 // OS
 #include "os.h"
@@ -50,10 +45,76 @@ s64 GetInvalIDsSumForRangePartOne(range_s64 IDRange)
                 s64 GroupSize = Divider;
                 s64 GroupRepeatCount = DigitsCount/Divider;
                 
-                if(GroupRepeatCount%2 != 0)
+                // Only do group repeats of 2
+                if(GroupRepeatCount%2 == 0)
                 {
-                    continue;
+                    s64 Shift = 10;
+                    for(s64 Index = 1; Index < GroupSize; Index += 1) Shift *= 10;
+                    
+                    s64 GroupValue = ID%Shift;
+                    
+                    b32 IDIsValid = false;
+                    s64 TempID = ID;
+                    for(s64 Index = 0; Index < GroupRepeatCount; Index += 1)
+                    {
+                        s64 Group = TempID%Shift;
+                        if(GroupValue != Group)
+                        {
+                            IDIsValid = true;
+                            break;
+                        }
+                        TempID /= Shift;
+                    }
+                    
+                    if(!IDIsValid)
+                    {
+                        
+#if 0                                
+                        OS_PrintFormat("[%ld] Invalid ID: %ld\n", LaneIndex(), ID);
+#endif
+                        
+                        InvalidIDsSum += ID;
+                        break;
+                    }
+                    
                 }
+            }
+        }
+        
+    }
+    
+    return InvalidIDsSum;
+}
+
+
+s64 GetInvalIDsSumForRangePartTwo(range_s64 IDRange)
+{
+    s64 InvalidIDsSum = 0;
+    
+    // NOTE(luca): We can cache a lot of these calculations
+    // - the digit count mostly stays the same
+    // - the factors for the digit count as well
+    for(s64 ID = IDRange.Min; ID <= IDRange.Max; ID += 1)
+    {
+        s64 DigitsCount = 0;
+        
+        // Count digits in ID
+        {                
+            s64 Value = ID;
+            while(Value)
+            {
+                Value /= 10;
+                DigitsCount += 1;
+            }
+        }
+        
+        for(u64 Divider = 1; Divider <= DigitsCount/2; Divider += 1)
+        {
+            if(DigitsCount%Divider == 0)
+            {
+                // This ID can be invalid
+                s64 GroupSize = Divider;
+                s64 GroupRepeatCount = DigitsCount/Divider;
                 
                 s64 Shift = 10;
                 for(s64 Index = 1; Index < GroupSize; Index += 1) Shift *= 10;
@@ -86,11 +147,11 @@ s64 GetInvalIDsSumForRangePartOne(range_s64 IDRange)
                 
             }
         }
-        
     }
     
     return InvalidIDsSum;
 }
+
 
 ENTRY_POINT(EntryPoint)
 {
@@ -175,7 +236,7 @@ ENTRY_POINT(EntryPoint)
             printf("%ld-%ld\n", IDRange.Min, IDRange.Max);
 #endif
             
-            InvalidIDsSum += GetInvalIDsSumForRangePartOne(IDRange);
+            InvalidIDsSum += GetInvalIDsSumForRangePartTwo(IDRange);
         }
     }
     
@@ -198,8 +259,6 @@ ENTRY_POINT(EntryPoint)
     {
         TotalSum += Sums[Index];
     }
-    
-    // 1227775554
     
     if(LaneIndex() == 0)
     {
