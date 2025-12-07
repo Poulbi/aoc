@@ -13,6 +13,7 @@
 #include "stb_sprintf.h"
 
 #include "linux.h"
+#include "arenas.h"
 
 #if !defined(NUMBER_OF_CORES)
 # define NUMBER_OF_CORES 6
@@ -31,20 +32,12 @@ struct os_thread
 //~ Syscalls
 
 //- Debug utilities 
-void AssertErrnoNotEquals(smm Result, smm ErrorValue)
+void AssertErrno(b32 Expression)
 {
-    if(Result == ErrorValue)
+    if(!Expression)
     {
         int Errno = errno;
-        Assert(0);
-    }
-}
-
-void AssertErrnoEquals(smm Result, smm ErrorValue)
-{
-    if(Result != ErrorValue)
-    {
-        int Errno = errno;
+        char *Error = strerror(Errno);
         Assert(0);
     }
 }
@@ -61,11 +54,11 @@ str8 OS_ReadEntireFileIntoMemory(char *FileName)
         {
             struct stat StatBuffer = {};
             int Error = fstat(File, &StatBuffer);
-            AssertErrnoNotEquals(Error, -1);
+            AssertErrno(Error != -1);
             
             Result.Size = StatBuffer.st_size;
             Result.Data = (u8 *)mmap(0, Result.Size, PROT_READ, MAP_PRIVATE, File, 0);
-            AssertErrnoNotEquals((smm)Result.Data, (smm)MAP_FAILED);
+            AssertErrno(Result.Data != MAP_FAILED);
         }
     }
     
@@ -77,21 +70,29 @@ void OS_PrintFormat(char *Format, ...)
     va_list Args;
     va_start(Args, Format);
     
+    vprintf(Format, Args);
+    
+#if 0    
     int Length = stbsp_vsprintf((char *)LogBuffer, Format, Args);
     smm BytesWritten = write(STDOUT_FILENO, LogBuffer, Length);
-    AssertErrnoEquals(BytesWritten, Length);
+    AssertErrno(BytesWritten == Length);
+#endif
+    
 }
 
 //~ Threads
 void OS_BarrierWait(barrier Barrier)
 {
-    pthread_barrier_wait((pthread_barrier_t *)Barrier);
+    s32 Ret = pthread_barrier_wait((pthread_barrier_t *)Barrier);
+    
+    AssertErrno(Ret == 0 || Ret == PTHREAD_BARRIER_SERIAL_THREAD);
 }
 
 void OS_SetThreadName(str8 ThreadName)
 {
     Assert(ThreadName.Size <= 16 -1);
-    prctl(PR_SET_NAME, ThreadName);
+    s32 Ret = prctl(PR_SET_NAME, ThreadName.Data);
+    AssertErrno(Ret != -1);
 }
 
 void* OS_Allocate(umm Size)
@@ -103,6 +104,8 @@ void* OS_Allocate(umm Size)
 //~ Entrypoint
 void LinuxMainEntryPoint(int ArgsCount, char **Args)
 {
+    arena *Arena = ArenaAlloc();
+    
     char ThreadName[16] = "Main";
     os_thread Threads[NUMBER_OF_CORES] = {0};
     s32 Ret = 0;
@@ -111,14 +114,16 @@ void LinuxMainEntryPoint(int ArgsCount, char **Args)
     prctl(PR_SET_NAME, ThreadName);
     
     u64 SharedStorage = 0;
-    pthread_barrier_t Barrier;
-    pthread_barrier_init(&Barrier, 0, (u32)ThreadsCount);
+    
+    barrier Barrier = (u64)ArenaPush(Arena, 1);
+    
+    pthread_barrier_init((pthread_barrier_t *)Barrier, 0, (u32)ThreadsCount);
     
     for(s64 Index = 0; Index < ThreadsCount; Index += 1)
     {
         Threads[Index].Context.LaneIndex = Index;
         Threads[Index].Context.LaneCount = ThreadsCount;
-        Threads[Index].Context.Barrier   = (barrier)(&Barrier);
+        Threads[Index].Context.Barrier   = Barrier;
         Threads[Index].Context.SharedStorage = &SharedStorage;
         
         Ret = pthread_create(&Threads[Index].Handle, 0, EntryPoint, &Threads[Index].Context);

@@ -25,5 +25,3 @@ void *ArenaPush(arena *Arena, umm Size)
     
     return Result;
 }
-
-#define PushArray(Arena, type, Count) (type *)ArenaPush((Arena), (Count)*(sizeof(type)))
