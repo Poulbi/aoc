@@ -68,5 +68,5 @@ Compile()
 if [ "$DidWork" = 0 ]
 then
  printf 'ERROR: No build provided.\n'
- printf 'Usage: %s <day1>\n' "$0"
+ printf 'Usage: %s <day1/day2>\n' "$0"
 fi
