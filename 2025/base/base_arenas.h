@@ -15,5 +15,6 @@ arena *ArenaAlloc(void);
 void *ArenaPush(arena *Arena, umm Size);
 
 #define PushArray(Arena, type, Count) (type *)ArenaPush((Arena), (Count)*(sizeof(type)))
+#define PushStruct(Arena, type) PushArray(Arena, type, 1)
 
 #endif //ARENAS_H

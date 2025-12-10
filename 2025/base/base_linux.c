@@ -14,11 +14,12 @@
 #include <sys/stat.h>
 #include <sys/sysinfo.h>
 
+PUSH_WARNINGS
 #define STB_SPRINTF_IMPLEMENTATION
-#include "stb_sprintf.h"
+#include "lib/stb_sprintf.h"
+POP_WARNINGS
 
-#include "linux.h"
-#include "arenas.h"
+#include "base_arenas.h"
 
 //~ Types
 typedef struct os_thread os_thread;
@@ -103,6 +104,12 @@ void* OS_Allocate(umm Size)
     return Result;
 }
 
+ENTRY_POINT(ThreadInitEntryPoint)
+{
+    ThreadInit((thread_context *)Params);
+    return EntryPoint(Params);
+}
+
 //~ Entrypoint
 void LinuxMainEntryPoint(int ArgsCount, char **Args)
 {
@@ -134,7 +141,7 @@ void LinuxMainEntryPoint(int ArgsCount, char **Args)
         Threads[Index].Context.Barrier   = Barrier;
         Threads[Index].Context.SharedStorage = &SharedStorage;
         
-        Ret = pthread_create(&Threads[Index].Handle, 0, EntryPoint, &Threads[Index].Context);
+        Ret = pthread_create(&Threads[Index].Handle, 0, ThreadInitEntryPoint, &Threads[Index].Context);
         Assert(Ret == 0);
     }
     

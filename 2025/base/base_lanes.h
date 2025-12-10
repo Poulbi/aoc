@@ -3,8 +3,6 @@
 #ifndef LANES_H
 #define LANES_H
 
-#include "arenas.h"
-
 typedef u64 barrier;
 
 typedef struct thread_context thread_context;
@@ -18,5 +16,7 @@ struct thread_context
     
     arena *Arena;
 };
+
+void ThreadInit(thread_context *ContextToSelect);
 
 #endif //LANES_H

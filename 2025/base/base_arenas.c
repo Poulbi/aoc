@@ -1,5 +1,3 @@
-#include "arenas.h"
-
 arena *ArenaAlloc(void)
 {
     umm DefaultSize = Kilobytes(64);
@@ -18,7 +16,7 @@ arena *ArenaAlloc(void)
 
 void *ArenaPush(arena *Arena, umm Size)
 {
-    void *Result = Arena->Base + Arena->Pos;
+    void *Result = (u8 *)Arena->Base + Arena->Pos;
     
     Assert(Arena->Pos + Size < Arena->Size);
     Arena->Pos += Size;
