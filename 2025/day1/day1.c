@@ -8,6 +8,8 @@
 
 #define MAX 100
 
+#define LaneSingleOSPrint(Format, ...) if(LaneIndex() == 0) { OS_PrintFormat(Format, ##__VA_ARGS__); }
+
 //~ Main program
 s32 RotateAndIncrementPasswordPartOne(s32 *ArrowPos, rotation Rotation)
 {
@@ -86,13 +88,21 @@ ENTRY_POINT(EntryPoint)
     // TODO(luca): Multi-threaded read of the same file? 
     if(LaneIndex() == 0)
     {
-        FileBuffer = OS_ReadEntireFileIntoMemory("./2025/data/day1_input");
-        File = &FileBuffer;
-        if(!File->Size)
+        if(Params->ArgsCount >= 2)
         {
-            fprintf(stderr, "ERROR: Could not read file.\n");
+            FileBuffer = OS_ReadEntireFileIntoMemory(Params->Args[1]);
+            if(!FileBuffer.Size)
+            {
+                OS_PrintFormat("ERROR: Could not read file.\n");
+            }
+        }
+        else
+        {
+            OS_PrintFormat("ERROR: No input provided."
+                           "Usage: %s <input>\n", Params->Args[0]);
         }
         RotationsTable = PushArray(ThreadContext->Arena, rotations_array, (LaneCount()));
+        File = &FileBuffer;
     }
     LaneSyncU64((u64 *)&File, 0);
     LaneSyncU64((u64 *)&RotationsTable, 0);
@@ -143,28 +153,25 @@ ENTRY_POINT(EntryPoint)
     RotationsTable[LaneIndex()] = Rotations;
     LaneSync();
     
-    if(LaneIndex() == 0)
+    s32 Arrow = 50;
+    s32 Password = 0;
+    
+    for(EachIndex(Index, LaneCount()))
     {
-        s32 Arrow = 50;
-        s32 Password = 0;
-        
-        for(EachIndex(Index, LaneCount()))
+        rotations_array Rotations = RotationsTable[Index];
+        for(EachIndex(Index, Rotations.Count))
         {
-            rotations_array Rotations = RotationsTable[Index];
-            for(EachIndex(Index, Rotations.Count))
-            {
-                rotation Rotation = Rotations.Values[Index];
-                
+            rotation Rotation = Rotations.Values[Index];
+            
 #if 0                
-                printf("%c%d\n", ((Rotation.IsLeft) ? 'L' : 'R'), Rotation.Count);
+            OS_PrintFormat("%c%d\n", ((Rotation.IsLeft) ? 'L' : 'R'), Rotation.Count);
 #endif
-                
-                Password += RotateAndIncrementPasswordPartTwo(&Arrow, Rotation);
-            }
+            
+            Password += RotateAndIncrementPasswordPartTwo(&Arrow, Rotation);
         }
-        
-        printf("Password is %d.\n", Password);
     }
+    
+    LaneSingleOSPrint("Password is %d.\n", Password);
     
     return 0;
 }

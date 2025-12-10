@@ -5,7 +5,15 @@
 
 global_variable u8 LogBuffer[Kilobytes(64)];
 
-#define ENTRY_POINT(Name) void *Name(void *Params)
+typedef struct entry_point_params entry_point_params;
+struct entry_point_params
+{
+    thread_context Context;
+    int ArgsCount;
+    char **Args;
+};
+
+#define ENTRY_POINT(Name) void *Name(entry_point_params *Params)
 typedef ENTRY_POINT(entry_point_func);
 ENTRY_POINT(EntryPoint);
 
