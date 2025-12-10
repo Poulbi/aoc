@@ -3,9 +3,7 @@
 #ifndef OS_H
 #define OS_H
 
-#include "lanes.h"
-
-global u8 LogBuffer[Kilobytes(64)];
+global_variable u8 LogBuffer[Kilobytes(64)];
 
 #define ENTRY_POINT(Name) void *Name(void *Params)
 typedef ENTRY_POINT(entry_point_func);
@@ -16,11 +14,6 @@ void OS_PrintFormat(char *Format, ...);
 void OS_BarrierWait(barrier Barrier);
 void OS_SetThreadName(str8 ThreadName);
 void* OS_Allocate(umm Size);
-
-#if OS_LINUX
-# include "linux.c"
-#elif OS_WINDOWS
-# include "windows.c"
-#endif
+void OS_BarrierWait(barrier Barrier);
 
 #endif //OS_H

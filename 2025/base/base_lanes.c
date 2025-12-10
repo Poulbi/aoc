@@ -1,9 +1,8 @@
+#include "base_arenas.h"
+
 #define MemoryCopy memcpy
 #define AtomicAddEvalU64(Pointer, Value) \
 (__sync_fetch_and_add((Pointer), (Value), __ATOMIC_SEQ_CST) + (Value));
-
-
-#include "lanes.h"
 
 thread_static thread_context *ThreadContext;
 
@@ -60,8 +59,9 @@ void ThreadInit(thread_context *ContextToSelect)
     
     ThreadContext->Arena = ArenaAlloc();
     
+    u8 ThreadNameBuffer[16] = {0};
     str8 ThreadName = {0};
-    ThreadName.Data = (u8[16]){0};
+    ThreadName.Data = ThreadNameBuffer;
     ThreadName.Size = 1;
     ThreadName.Data[0] = (u8)LaneIndex() + '0';
     OS_SetThreadName(ThreadName);

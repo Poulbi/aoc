@@ -1,11 +1,4 @@
-// Mine
-#include "lr/lr.h"
-
-//~ Layers
-// OS
-#include "os.h"
-#include "arenas.c"
-#include "lanes.c"
+#include "base/base.h"
 
 s64 GetInvalIDsSumForRangePartOne(range_s64 IDRange)
 {
@@ -210,10 +203,10 @@ ENTRY_POINT(EntryPoint)
             
             if(In[At] == ',' || At == InputFile.Size)
             {
-#if 0
+#if 1
                 // To validate
                 // TODO(luca): thread-safe OS_PrintFormat ?
-                printf("%ld-%ld\n", IDRange.Min, IDRange.Max);
+                printf("[%ld] %ld-%ld\n", LaneIndex(), IDRange.Min, IDRange.Max);
 #endif
                 
                 InvalidIDsSum += GetInvalIDsSumForRangePartTwo(IDRange);

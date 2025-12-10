@@ -1,11 +1,4 @@
-// Mine
-#include "lr/lr.h"
-
-//~ Layers
-// OS
-#include "os.h"
-#include "arenas.c"
-#include "lanes.c"
+#include "base/base.h"
 
 ENTRY_POINT(EntryPoint)
 {
@@ -14,7 +7,7 @@ ENTRY_POINT(EntryPoint)
     str8 InputFile = {0};
     range_s64 InputRange = {0};
     
-    InputFile = OS_ReadEntireFileIntoMemory("./2025/day3/foo_input");
+    InputFile = OS_ReadEntireFileIntoMemory("./2025/day3/input");
     
     // TODO(luca): Create ranges based on finding a newline.
     

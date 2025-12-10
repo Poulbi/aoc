@@ -3,17 +3,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-// Mine
-#include "lr/lr.h"
-
-#define MemoryCopy memcpy
-
-//~ Layers
-// OS
+#include "base/base.h"
 #include "day1.h"
-#include "os.h"
-#include "arenas.c"
-#include "lanes.c"
 
 #define MAX 100
 
