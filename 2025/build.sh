@@ -7,7 +7,7 @@ cd "$ScriptDirectory"
 
 #- Main
 DidWork=0
-Build="./build"
+Build="../build"
 
 clang=1
 gcc=0
@@ -117,5 +117,5 @@ C_Compile()
 if [ "$DidWork" = 0 ]
 then
  printf 'ERROR: No valid build target provided.\n'
- printf 'Usage: %s <hash/day3>\n' "$0"
+ printf 'Usage: %s <day1/day2/day3/day3_cu>\n' "$0"
 fi

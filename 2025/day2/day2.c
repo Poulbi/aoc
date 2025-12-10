@@ -145,7 +145,7 @@ ENTRY_POINT(EntryPoint)
     str8 InputFile = {0};
     range_s64 InputRange = {0};
     
-    InputFile = OS_ReadEntireFileIntoMemory("./2025/day2/input");
+    InputFile = OS_ReadEntireFileIntoMemory("./2025/data/day2_input");
     InputRange = LaneRange(InputFile.Size);
     
     if(LaneIndex() == 0)

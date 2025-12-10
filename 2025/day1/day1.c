@@ -86,7 +86,7 @@ ENTRY_POINT(EntryPoint)
     // TODO(luca): Multi-threaded read of the same file? 
     if(LaneIndex() == 0)
     {
-        FileBuffer = OS_ReadEntireFileIntoMemory("./2025/day1/input");
+        FileBuffer = OS_ReadEntireFileIntoMemory("./2025/data/day1_input");
         File = &FileBuffer;
         if(!File->Size)
         {

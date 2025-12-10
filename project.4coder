@@ -4,6 +4,7 @@ project_name = "Advent Of Code";
 patterns = 
 {
     "*.c",
+    "*.cu",
     "*.cpp",
     "*.h",
     "*.m",
