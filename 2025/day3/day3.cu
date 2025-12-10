@@ -63,7 +63,7 @@ ENTRY_POINT(EntryPoint)
     if(LaneIndex() == 0)
     {
         // We know how long each line will be.
-        str8 File = OS_ReadEntireFileIntoMemory("./data/day3_input");
+        str8 File = OS_ReadEntireFileIntoMemory("./2025/data/day3_input");
         
         umm LineSize = 0;
         for(umm Idx = 0; Idx < File.Size; Idx += 1)

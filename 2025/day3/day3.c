@@ -7,7 +7,7 @@ ENTRY_POINT(EntryPoint)
     str8 InputFile = {0};
     range_s64 InputRange = {0};
     
-    InputFile = OS_ReadEntireFileIntoMemory("./2025/day3/input");
+    InputFile = OS_ReadEntireFileIntoMemory("./2025/data/day3_input");
     
     // TODO(luca): Create ranges based on finding a newline.
     
