@@ -62,50 +62,64 @@ ENTRY_POINT(EntryPoint)
 {
     if(LaneIndex() == 0)
     {
-        // We know how long each line will be.
-        str8 File = OS_ReadEntireFileIntoMemory("./2025/data/day3_input");
-        
-        umm LineSize = 0;
-        for(umm Idx = 0; Idx < File.Size; Idx += 1)
-        {
-            if(File.Data[Idx] == '\n')
+        if(Params->ArgsCount >= 2)
+        {            
+            str8 File = OS_ReadEntireFileIntoMemory(Params->Args[1]);
+            if(File.Size)
+                
+            {                
+                umm LineSize = 0;
+                for(umm Idx = 0; Idx < File.Size; Idx += 1)
+                {
+                    if(File.Data[Idx] == '\n')
+                    {
+                        LineSize = Idx + 1;
+                        break;
+                    }
+                }
+                Assert(LineSize < File.Size);
+                Assert(File.Size%LineSize == 0);
+                
+                s32 LinesCount = (s32)(File.Size / LineSize); 
+                s32 ThreadsPerBlock = 32;
+                s32 BlocksCount = (LinesCount/ThreadsPerBlock) + 1;
+                
+                umm OutputSize = (sizeof(u64)*BatteryCount*LinesCount);
+                u64 *HostOutput = (u64 *)ArenaPush(ThreadContext->Arena, OutputSize);
+                u64 *DeviceOutput = 0;
+                u8 *DeviceLines = 0;
+                
+                CU_Check(cudaMalloc(&DeviceLines, File.Size));
+                CU_Check(cudaMalloc(&DeviceOutput, OutputSize));
+                CU_Check(cudaMemcpy(DeviceLines, File.Data, File.Size, cudaMemcpyHostToDevice));
+                
+                GetBigJoltage<<<BlocksCount, ThreadsPerBlock>>>(DeviceOutput, DeviceLines, LinesCount, (s32)LineSize);
+                CU_Check(cudaGetLastError()); 
+                
+                CU_Check(cudaDeviceSynchronize());
+                CU_Check(cudaMemcpy(HostOutput, DeviceOutput, OutputSize, cudaMemcpyDeviceToHost));
+                
+                u64 JoltageSum = 0;
+                for(s32 Idx = 0; Idx < LinesCount; Idx += 1)
+                {
+                    JoltageSum += HostOutput[Idx];
+#if 0
+                    OS_PrintFormat("%lu\n", HostOutput[Idx]);
+#endif
+                }
+                
+                OS_PrintFormat("Joltage sum is %lu.\n", JoltageSum);
+            }
+            else
             {
-                LineSize = Idx + 1;
-                break;
+                OS_PrintFormat("ERROR: Could not read file.\n");
             }
         }
-        Assert(LineSize < File.Size);
-        Assert(File.Size%LineSize == 0);
-        
-        s32 LinesCount = (s32)(File.Size / LineSize); 
-        s32 ThreadsPerBlock = 32;
-        s32 BlocksCount = (LinesCount/ThreadsPerBlock) + 1;
-        
-        umm OutputSize = (sizeof(u64)*BatteryCount*LinesCount);
-        u64 *HostOutput = (u64 *)ArenaPush(ThreadContext->Arena, OutputSize);
-        u64 *DeviceOutput = 0;
-        u8 *DeviceLines = 0;
-        
-        CU_Check(cudaMalloc(&DeviceLines, File.Size));
-        CU_Check(cudaMalloc(&DeviceOutput, OutputSize));
-        CU_Check(cudaMemcpy(DeviceLines, File.Data, File.Size, cudaMemcpyHostToDevice));
-        
-        GetBigJoltage<<<BlocksCount, ThreadsPerBlock>>>(DeviceOutput, DeviceLines, LinesCount, (s32)LineSize);
-        CU_Check(cudaGetLastError()); 
-        
-        CU_Check(cudaDeviceSynchronize());
-        CU_Check(cudaMemcpy(HostOutput, DeviceOutput, OutputSize, cudaMemcpyDeviceToHost));
-        
-        u64 JoltageSum = 0;
-        for(s32 Idx = 0; Idx < LinesCount; Idx += 1)
+        else
         {
-            JoltageSum += HostOutput[Idx];
-#if 0
-            OS_PrintFormat("%lu\n", HostOutput[Idx]);
-#endif
+            OS_PrintFormat("ERROR: No input provided.\n"
+                           "Usage: %s <input>\n", Params->Args[0]);
         }
-        
-        OS_PrintFormat("Joltage sum is %lu.\n", JoltageSum);
     }
     
     return 0;

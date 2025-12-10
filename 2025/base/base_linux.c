@@ -21,6 +21,8 @@ POP_WARNINGS
 
 #include "base_arenas.h"
 
+typedef void *pthread_entry_point_func(void *);
+
 //~ Types
 typedef struct os_thread os_thread;
 struct os_thread
@@ -29,6 +31,7 @@ struct os_thread
     void *Result;
     
     thread_context Context;
+    entry_point_params Params;
 };
 
 //~ Syscalls
@@ -106,7 +109,7 @@ void* OS_Allocate(umm Size)
 
 ENTRY_POINT(ThreadInitEntryPoint)
 {
-    ThreadInit((thread_context *)Params);
+    ThreadInit(&Params->Context);
     return EntryPoint(Params);
 }
 
@@ -136,12 +139,15 @@ void LinuxMainEntryPoint(int ArgsCount, char **Args)
     
     for(s64 Index = 0; Index < ThreadsCount; Index += 1)
     {
-        Threads[Index].Context.LaneIndex = Index;
-        Threads[Index].Context.LaneCount = ThreadsCount;
-        Threads[Index].Context.Barrier   = Barrier;
-        Threads[Index].Context.SharedStorage = &SharedStorage;
+        entry_point_params *Params = &Threads[Index].Params;
+        Params->Context.LaneIndex = Index;
+        Params->Context.LaneCount = ThreadsCount;
+        Params->Context.Barrier   = Barrier;
+        Params->Context.SharedStorage = &SharedStorage;
+        Params->Args = Args;
+        Params->ArgsCount = ArgsCount;
         
-        Ret = pthread_create(&Threads[Index].Handle, 0, ThreadInitEntryPoint, &Threads[Index].Context);
+        Ret = pthread_create(&Threads[Index].Handle, 0, (pthread_entry_point_func *)ThreadInitEntryPoint, Params);
         Assert(Ret == 0);
     }
     
