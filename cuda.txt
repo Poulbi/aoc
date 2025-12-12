@@ -71,6 +71,20 @@ You can update parameters to nodes afterwards.
 
 Pitched memory is memory that is aligned for better performance.
 
+# Memory pools
+Efficient memory allocator that works with a threshold.
+Async() versions of malloc and free.
+The threshold is a soft limit.
+Offers tracking of allocations and if they go above a limit.
+
+
+# cuBLAS
+BLAS library in CUDA. 
+Row/Column major means how it is stored in memory, row by row or column by column.
+Stateful using handles.
+cuBLAS functions launch their own kernels.
+
+
 # Questions
 - query the max amount of threads per block ?
 - query warp scheduler and partition count on maxwell
