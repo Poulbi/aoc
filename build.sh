@@ -3,7 +3,7 @@
 set -eu
 
 ScriptDirectory="$(dirname "$(readlink -f "$0")")"
-cd "$ScriptDirectory"
+cd "$ScriptDirectory"/code
 
 #- Main
 DidWork=0
@@ -19,10 +19,11 @@ day1=0
 day2=0
 day3=0
 day3_cu=0
+day4=0
 samples=0
 
 # Default
-[ "$#" = 0 ] && samples=1
+[ "$#" = 0 ] && day4=1
 
 for Arg in "$@"; do eval "$Arg=1"; done
 # Exclusive flags
@@ -43,7 +44,7 @@ CU_Compile()
  printf '[%s compile]\n' "$Compiler"
 
  Flags="$Flags
- -g -G -I$ScriptDirectory -DOS_LINUX=1
+ -g -G -I$ScriptDirectory/code -DOS_LINUX=1
  -arch sm_50
  "
  WarningFlags="
@@ -77,9 +78,8 @@ CU_Compile()
 
  printf '%s\n' "$Source"
  Source="$(readlink -f "$Source")"
-
  
-  $Compiler $Flags "$Source" -o "$Build"/"$Out"
+ $Compiler $Flags "$Source" -o "$Build"/"$Out"
 
  DidWork=1
 }
@@ -93,7 +93,7 @@ C_Compile()
  [ "$clang" = 1 ] && Compiler="clang"
  printf '[%s compile]\n' "$Compiler"
  
- CommonCompilerFlags="-DOS_LINUX=1 -fsanitize-trap -nostdinc++ -I$ScriptDirectory"
+ CommonCompilerFlags="-DOS_LINUX=1 -fsanitize-trap -nostdinc++ -I$ScriptDirectory/code"
  CommonWarningFlags="-Wall -Wextra -Wconversion -Wdouble-promotion -Wno-sign-conversion -Wno-sign-compare -Wno-double-promotion -Wno-unused-but-set-variable -Wno-unused-variable -Wno-write-strings -Wno-pointer-arith -Wno-unused-parameter -Wno-unused-function -Wno-missing-field-initializers"
  LinkerFlags=""
 
@@ -122,18 +122,17 @@ C_Compile()
 Strip()
 {
  Source="$1"
- Out="${1%%.cu}"
- Out="${Out%%.c}"
- Out="${Out%%.cpp}"
+ Out="${1%.*}"
  Out="${Out##*/}"
 
  printf '%s %s' "$Source" "$Out"
 }
 
-[ "$day1"    = 1 ] && C_Compile  $(Strip ./day1/day1.c)
-[ "$day2"    = 1 ] && C_Compile  $(Strip ./day2/day2.c)
-[ "$day3"    = 1 ] && C_Compile  $(Strip ./day3/day3.c)
-[ "$day3_cu" = 1 ] && CU_Compile $(Strip ./day3/day3.cu)
+[ "$day1"    = 1 ] && C_Compile  $(Strip ./days/day1.c)
+[ "$day2"    = 1 ] && C_Compile  $(Strip ./days/day2.c)
+[ "$day3"    = 1 ] && C_Compile  $(Strip ./days/day3.c)
+[ "$day3_cu" = 1 ] && CU_Compile $(Strip ./days/day3.cu)
+[ "$day4"    = 1 ] && CU_Compile $(Strip ./days/day4.cu)
 
 if [ "$samples" = 1 ]
 then
@@ -145,5 +144,5 @@ fi
 if [ "$DidWork" = 0 ]
 then
  printf 'ERROR: No valid build target provided.\n'
- printf 'Usage: %s <day1/day2/day3/day3_cu>\n' "$0"
+ printf 'Usage: %s <samples/day1/day2/day3/day3_cu>\n' "$0"
 fi
