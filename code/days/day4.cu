@@ -5,51 +5,6 @@
 
 global_variable void (*Log)(char *Format, ...) = OS_PrintFormat;
 
-kernel void
-GetRollsCount(s32 *AccessibleRollsCount, u8 *Input, umm InputSize, umm Stride)
-{
-    s32 ThreadIdx = blockIdx.x*blockDim.x + threadIdx.x; 
-    
-    s32 Lines = (s32)(InputSize/Stride);
-    s32 LineSize = Stride - 1;
-    s32 CharactersCount = Lines*LineSize;
-    
-    if(ThreadIdx < CharactersCount)
-    {       
-        s32 X = (ThreadIdx % LineSize);
-        s32 Y = (ThreadIdx / LineSize);
-        
-        u8 *Char = Input + (Y*Stride + X);
-        
-        if(*Char == '@')
-        {
-            s32 MinX = Maximum(X - 1, 0);
-            s32 MinY = Maximum(Y - 1, 0);
-            s32 MaxX = Minimum(X + 1, (s32)LineSize);
-            s32 MaxY = Minimum(Y + 1, (s32)Lines);
-            
-            s32 RollsCount = 0;
-            for(s32 ScanY = MinY; ScanY <= MaxY; ScanY += 1)
-            {
-                for(s32 ScanX = MinX; ScanX <= MaxX; ScanX += 1)
-                {
-                    u8 *ScanChar = Input + (ScanY*Stride + ScanX);
-                    if(!(ScanX == X && ScanY == Y))
-                    {
-                        RollsCount += !!(*ScanChar == '@');
-                    }
-                }
-            }
-            if(RollsCount < 4)
-            {
-                atomicAdd(AccessibleRollsCount, 1);
-            }
-        }
-    }
-    
-}
-
-
 ENTRY_POINT(EntryPoint)
 {
     
@@ -64,37 +19,58 @@ ENTRY_POINT(EntryPoint)
             {
                 if(InputFile.Data[Idx] == '\n')
                 {
-                    LineSize = Idx;
+                    LineSize = Idx + 1;
                     break;
                 }
             }
-            umm Stride = LineSize + 1;
-            Assert(InputFile.Size%Stride == 0);
-            Assert(LineSize && InputFile.Data[LineSize] == '\n'); // NOTE(luca): We should check every line...
+            Assert(InputFile.Size%LineSize == 0);
+            Assert(LineSize && InputFile.Data[LineSize - 1] == '\n'); // NOTE(luca): We should check every line...
             
-            CU_Check(cudaSetDevice(0));
+            // 1. check around you
+            // 2. if '@' rolls += 1
+            // 3. if  < 4 access count += 1
             
-            arena *CU_Arena = CU_ArenaAlloc(ThreadContext->Arena);
-            s32 *AccessibleRollsCount = PushStruct(CU_Arena, s32);
-            u8 *Input = PushArray(CU_Arena, u8, InputFile.Size);
+            umm Lines = (InputFile.Size/LineSize);
             
-            CU_Check(cudaMemcpy(Input, InputFile.Data, InputFile.Size, cudaMemcpyHostToDevice));
+            u8 *Row = InputFile.Data;
+            s32 AccessibleRollsCount = 0;
+            for(s32 Y = 0; Y < (s32)Lines; Y += 1)
+            {
+                u8 *Char = Row;
+                for(s32 X = 0; X < (s32)LineSize; X += 1)
+                {
+                    if(*Char == '@')
+                    {
+                        s32 MinX = Maximum(X - 1, 0);
+                        s32 MinY = Maximum(Y - 1, 0);
+                        s32 MaxX = Minimum(X + 1, (s32)LineSize - 1);
+                        s32 MaxY = Minimum(Y + 1, (s32)Lines - 1);
+                        
+                        s32 RollsCount = 0;
+                        for(s32 ScanY = MinY; ScanY <= MaxY; ScanY += 1)
+                        {
+                            for(s32 ScanX = MinX; ScanX <= MaxX; ScanX += 1)
+                            {
+                                u8 *ScanChar = InputFile.Data + (ScanY*LineSize + ScanX);
+                                if(!(ScanX == X && ScanY == Y))
+                                {
+                                    RollsCount += !!(*ScanChar == '@');
+                                }
+                            }
+                        }
+                        if(RollsCount < 4)
+                        {
+                            AccessibleRollsCount += 1;
+                        }
+                    }
+                    
+                    Char += 1;
+                }
+                
+                Row += LineSize;
+            }
             
-            umm Lines = InputFile.Size / Stride;
-            u32 CharacterCount = (u32)(Lines*LineSize);
-            
-            u32 BlockSize = 256;
-            u32 BlocksCount = (CharacterCount + BlockSize - 1) / BlockSize;
-            
-            GetRollsCount<<<BlocksCount, BlockSize>>>(AccessibleRollsCount, Input, InputFile.Size, Stride);
-            CU_Check(cudaGetLastError()); 
-            
-            CU_Check(cudaDeviceSynchronize());
-            
-            s32 Count = 0;
-            CU_Check(cudaMemcpy(&Count, AccessibleRollsCount, sizeof(Count), cudaMemcpyDeviceToHost));
-            
-            Log("The forklifts can access %d rolls.\n", Count); 
+            Log("There are %d accessible rolls.\n", AccessibleRollsCount);
             
         }
         else
